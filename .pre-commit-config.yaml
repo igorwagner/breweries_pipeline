@@ -1,0 +1,33 @@
+repos:
+  - repo: local
+
+    hooks:
+      - id: isort
+        name: isort
+        language: system
+        entry: isort --profile=black .
+        types: [python]
+
+      - id: black
+        name: black
+        language: system
+        entry: black .
+        types: [python]
+
+      - id: pylint
+        name: pylint
+        language: system
+        entry: pylint jobs
+        types: [python]
+
+      - id: flake8
+        name: flake8
+        language: system
+        entry: flake8 jobs
+        types: [python]
+
+      - id: mypy
+        name: mypy
+        language: system
+        entry: mypy jobs
+        types: [python]

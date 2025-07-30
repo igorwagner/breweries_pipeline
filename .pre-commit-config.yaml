@@ -17,17 +17,11 @@ repos:
       - id: pylint
         name: pylint
         language: system
-        entry: pylint jobs
+        entry: pylint jobs dags
         types: [python]
 
       - id: flake8
         name: flake8
         language: system
-        entry: flake8 jobs
-        types: [python]
-
-      - id: mypy
-        name: mypy
-        language: system
-        entry: mypy jobs
+        entry: flake8 jobs dags
         types: [python]

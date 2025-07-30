@@ -1,3 +1,8 @@
 .idea
 venv
-datalake
+
+local_container/config
+local_container/logs
+local_container/plugins
+
+.env

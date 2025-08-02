@@ -51,7 +51,7 @@ def fetch_brewery_data(total_requests: int, delay_seconds: int = 15) -> list:
     for i in range(total_requests):
         logger.info("Request %s/%s", i + 1, total_requests)
         try:
-            response = requests.get(f"{BASE_URL}?size={10}", timeout=10)
+            response = requests.get(f"{BASE_URL}?size={50}", timeout=10)
             response.raise_for_status()
             all_data.extend(response.json())
         except requests.RequestException as e:

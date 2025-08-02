@@ -4,5 +4,4 @@ venv
 local_container/config
 local_container/logs
 local_container/plugins
-
-.env
+local_container/.env

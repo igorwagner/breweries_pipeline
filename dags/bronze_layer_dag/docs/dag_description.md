@@ -13,12 +13,12 @@ randomly generated dates.
 
 The DAG accepts parameters via "params", which are rendered into the Bash command:
 
-| Parameter         | Type | Default   | Description                                             |
-|-------------------|------|-----------|---------------------------------------------------------|
-| `start_year`      | int  | 2023      | The beginning year for generating random dates.         |
-| `end_year`        | int  | 2025      | The ending year for generating random dates.            |
-| `total_breweries` | int  | 50        | Total number of breweries to fetch from the API.        |
-| `target`          | str  | "local"   | Storage target: "local" for disk or "s3" for S3 bucket. |
+| Parameter        | Type | Default | Description                                                           |
+|------------------|------|---------|-----------------------------------------------------------------------|
+| `start_year`     | int  | 2023    | The beginning year for generating random dates.                       |
+| `end_year`       | int  | 2025    | The ending year for generating random dates.                          |
+| `num-requests`   | int  | 1       | Number of times the script will fetch 50 random breweries per request |
+| `target`         | str  | "local" | Storage target: "local" for disk or "s3" for S3 bucket.               |
 
 If no parameter is provided when triggering the DAG, defaults will be used.
 

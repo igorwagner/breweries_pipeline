@@ -1,0 +1,49 @@
+This Airflow DAG orchestrates a data ingestion pipeline that retrieves random brewery data from the
+[OpenBreweryDB API](https://www.openbrewerydb.org/) and stores it in a local data lake, partitioned by
+randomly generated dates.
+
+## 📌 Overview
+
+- **Source**: OpenBreweryDB API (/v1/breweries/random)
+- **Output**: Local JSONL files in the bronze_layer of a data lake
+- **Partitioning**: By randomly generated year/month/day
+- **Technology**: Apache Airflow + BashOperator
+
+## ⚙️ Parameters
+
+The DAG accepts parameters via "params", which are rendered into the Bash command:
+
+| Parameter         | Type | Default   | Description                                             |
+|-------------------|------|-----------|---------------------------------------------------------|
+| `start_year`      | int  | 2023      | The beginning year for generating random dates.         |
+| `end_year`        | int  | 2025      | The ending year for generating random dates.            |
+| `total_breweries` | int  | 50        | Total number of breweries to fetch from the API.        |
+| `target`          | str  | "local"   | Storage target: "local" for disk or "s3" for S3 bucket. |
+
+If no parameter is provided when triggering the DAG, defaults will be used.
+
+## 🧱 DAG Structure
+
+- **fetch_and_save_data**: Executes the "build_bronze_layer.py" job via "BashOperator".
+
+## 📁 Output Path
+
+Files are saved in the following structure locally:
+```bash
+/opt/airflow/datalake/bronze_layer/
+└── year=YYYY/
+    └── month=MM/
+        └── day=DD/
+            └── YYYY_MM_DD_data.jsonl
+```
+
+Files are saved in the following structure at **S3**:
+```bash
+s3://breweries-datalake/bronze_layer/
+└── year=YYYY/
+    └── month=MM/
+        └── day=DD/
+            └── YYYY_MM_DD_data.jsonl
+```
+
+Each ".jsonl" file contains brewery records assigned a random date between the defined "start_year" and "end_year".

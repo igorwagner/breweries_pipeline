@@ -4,10 +4,10 @@ import argparse
 import os
 from pathlib import Path
 
-from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 from jobs.utils.logger import logger
+from jobs.utils.spark_session import set_spark_session
 
 
 AWS_BUCKET = os.getenv("AWS_S3_DATALAKE_BUCKET")
@@ -54,24 +54,7 @@ def run_pipeline(source: str, target: str) -> None:
     """
     bronze_path = get_path("bronze_layer", source)
     silver_path = get_path("silver_layer/breweries", target)
-
-    jars = [
-        "/opt/airflow/jars/aws-java-sdk-bundle-1.12.262.jar",
-        "/opt/airflow/jars/hadoop-aws-3.3.4.jar",
-        "/opt/airflow/jars/hadoop-client-api-3.3.4.jar",
-        "/opt/airflow/jars/hadoop-client-runtime-3.3.4.jar",
-        "/opt/airflow/jars/hadoop-common-3.3.4.jar",
-    ]
-
-    spark = (
-        SparkSession.builder
-        .appName("Build Silver Layer - Breweries")
-        .config("spark.jars", ",".join(jars))
-        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
-        .config("spark.hadoop.fs.s3a.aws.credentials.provider", "com.amazonaws.auth.DefaultAWSCredentialsProviderChain")
-        .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com")
-        .getOrCreate()
-    )
+    spark = set_spark_session("Build Silver Layer - Breweries")
 
     schema = StructType([
         StructField("id", StringType(), nullable=True),

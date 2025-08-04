@@ -120,7 +120,7 @@ def save_data_s3(key_path: str, content: str) -> None:
         None
     """
     try:
-        logger.info("Uploading to S3: %s", key_path)
+        logger.info(f"Uploading to S3: {key_path}")
         try:
             existing = s3_client.get_object(Bucket=AWS_BUCKET, Key=key_path)
             existing_content = existing["Body"].read().decode("utf-8")
@@ -133,9 +133,9 @@ def save_data_s3(key_path: str, content: str) -> None:
             Key=key_path,
             Body=final_content.encode("utf-8"),
         )
-        logger.info("Data saved to S3!")
+        logger.info(f"Data saved to s3://{AWS_BUCKET}/{key_path}!")
     except (ClientError, BotoCoreError) as exception:
-        logger.error("Error uploading to S3: %s", str(exception))
+        logger.error(f"Error uploading to S3: {str(exception)}")
 
 
 def run_pipeline(start_year: int, end_year: int, num_requests: int, target: str) -> None:
@@ -156,7 +156,7 @@ def run_pipeline(start_year: int, end_year: int, num_requests: int, target: str)
     Returns:
         None
     """
-    logger.info("Total requests to be made: %d", num_requests)
+    logger.info(f"Total requests to be made: {num_requests}")
     data = fetch_brewery_data(num_requests)
     for record in data:
         date = generate_random_date(start_year, end_year)
@@ -174,6 +174,8 @@ def run_pipeline(start_year: int, end_year: int, num_requests: int, target: str)
             s3_key = f"bronze_layer/{relative_path}"
             save_data_s3(s3_key, content)
 
+    logger.info(f"Bronze layer pipeline completed! {len(data)} records processed!")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch and store random brewery data")
@@ -184,6 +186,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    logger.info(f"Saving data to: {args.target}")
-
+    logger.info(f"Starting Bronze Layer Pipeline | Source: API Data | Target: {args.target}")
     run_pipeline(start_year=args.start_year, end_year=args.end_year, num_requests=args.num_requests, target=args.target)

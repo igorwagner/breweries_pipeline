@@ -10,6 +10,7 @@ from pathlib import Path
 
 import boto3
 import requests
+from botocore.exceptions import BotoCoreError, ClientError
 
 from jobs.utils.logger import logger
 
@@ -105,8 +106,9 @@ def save_data_s3(key_path: str, content: str) -> None:
             Body=final_content.encode("utf-8"),
         )
         logger.info("Data saved to S3!")
-    except Exception as e:
-        logger.error("Error uploading to S3: %s", str(e))
+    except (ClientError, BotoCoreError) as exception:
+        logger.error("Error uploading to S3: %s", str(exception))
+
 
 def run_pipeline(start_year: int, end_year: int, num_requests: int, target: str) -> None:
     """
@@ -156,9 +158,4 @@ if __name__ == "__main__":
 
     logger.info(f"Saving data to: {args.target}")
 
-    run_pipeline(
-        start_year=args.start_year,
-        end_year=args.end_year,
-        num_requests=args.num_requests,
-        target=args.target
-    )
+    run_pipeline(start_year=args.start_year, end_year=args.end_year, num_requests=args.num_requests, target=args.target)

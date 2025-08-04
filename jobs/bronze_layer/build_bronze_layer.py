@@ -154,9 +154,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.target not in ["local", "s3"]:
-        raise ValueError("Invalid targe parameter. Use 'local' or 's3'.")
-
     logger.info(f"Saving data to: {args.target}")
 
     run_pipeline(

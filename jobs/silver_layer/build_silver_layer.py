@@ -94,8 +94,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.target not in ["local", "s3"]:
-        raise ValueError("Invalid target parameter. Use 'local' or 's3'.")
-
-    logger.info(f"Starting pipeline | Source: {args.source} | Target: {args.target}")
+    logger.info(f"Starting Silver Layer Pipeline | Source: {args.source} | Target: {args.target}")
     run_pipeline(source=args.source, target=args.target)

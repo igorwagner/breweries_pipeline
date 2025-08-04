@@ -4,12 +4,14 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator
+from utils.discord_webhook import send_discord_alert
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
+    "on_failure_callback": send_discord_alert,
 }
 
 with DAG(

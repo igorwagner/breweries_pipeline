@@ -17,8 +17,9 @@ repos:
       - id: pylint
         name: pylint
         language: system
-        entry: pylint jobs dags
+        entry: pylint
         types: [python]
+        exclude: ^dags/
 
       - id: flake8
         name: flake8

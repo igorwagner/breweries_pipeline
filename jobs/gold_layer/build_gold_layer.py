@@ -1,5 +1,7 @@
 """Pipeline to build the Gold Layer by aggregating brewery data from the Silver Layer."""
 
+# pylint: disable=R0801
+
 import argparse
 
 from jobs.utils.get_path import get_path

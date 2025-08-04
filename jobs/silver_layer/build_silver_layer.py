@@ -1,5 +1,7 @@
 """Pipeline to transform brewery data from bronze to silver layer using Spark."""
 
+# pylint: disable=R0801
+
 import argparse
 
 from pyspark.sql.types import DoubleType, StringType, StructField, StructType

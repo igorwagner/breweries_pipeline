@@ -39,24 +39,52 @@ def generate_random_date(start_year: int = 2023, end_year: int = 2025) -> dateti
 
 def fetch_brewery_data(total_requests: int, delay_seconds: int = 15) -> list:
     """
-    Fetches brewery data from the OpenBreweryDB API, making multiple paginated requests.
+    Fetches brewery data from the OpenBreweryDB API using multiple independent requests to the /random endpoint.
+
+    Implements retry logic with exponential backoff and jitter in case of network errors, HTTP 5xx errors,
+    or rate limiting (429). Retries up to 5 times before giving up on a single request.
 
     Args:
-        total_requests (int): Number of requests to perform.
-        delay_seconds (int, optional): Delay in seconds between each request. Default is 15.
+        total_requests (int): Number of API requests to perform.
+        delay_seconds (int, optional): Delay in seconds between successful requests. Default is 15.
 
     Returns:
-        list[dict]: A list containing brewery records retrieved from the API.
+        list[dict]: A list of brewery records retrieved from the API.
     """
     all_data = []
-    for i in range(total_requests):
-        logger.info("Request %s/%s", i + 1, total_requests)
-        try:
-            response = requests.get(f"{BASE_URL}?size={50}", timeout=10)
-            response.raise_for_status()
-            all_data.extend(response.json())
-        except requests.RequestException as e:
-            logger.error("Error on request %s: %s", i + 1, str(e))
+    max_retries = 5
+    base_delay = 1
+
+    for request_number in range(total_requests):
+        logger.info(f"Request {request_number + 1}/{total_requests}")
+        success = False
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(f"{BASE_URL}?size={50}", timeout=10)
+                response.raise_for_status()
+                all_data.extend(response.json())
+                success = True
+                break
+            except requests.HTTPError as http_err:
+                status_code = http_err.response.status_code if http_err.response else "unknown"
+                if status_code == 429:
+                    retry_after = int(http_err.response.headers.get("Retry-After", 60))
+                    logger.warning(f"Rate limited. Waiting {retry_after}s before retry.")
+                    time.sleep(retry_after)
+                elif status_code >= 500:
+                    logger.warning(f"Server error {status_code}. Retrying (attempt {attempt+1}/{max_retries})...")
+                    time.sleep(base_delay * (2**attempt) + random.uniform(0, 1))
+                else:
+                    logger.error(f"Non-retryable HTTP error {status_code}: {http_err}")
+                    break
+            except requests.RequestException as e:
+                logger.warning(f"Request failed: {e}. Retrying (attempt {attempt + 1}/{max_retries})...")
+                time.sleep(base_delay * (2**attempt) + random.uniform(0, 1))
+
+        if not success:
+            logger.error(f"Failed to fetch data on request {request_number + 1} after {max_retries} attempts.")
+
         time.sleep(delay_seconds)
 
     return all_data

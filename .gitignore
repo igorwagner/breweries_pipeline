@@ -4,6 +4,7 @@ venv
 local_container/config
 local_container/logs
 local_container/plugins
+local_container/jars
 local_container/.env
 
 __pycache__/

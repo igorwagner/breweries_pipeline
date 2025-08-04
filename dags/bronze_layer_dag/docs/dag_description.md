@@ -13,12 +13,12 @@ randomly generated dates.
 
 The DAG accepts parameters via "params", which are rendered into the Bash command:
 
-| Parameter        | Type | Default | Description                                                           |
-|------------------|------|---------|-----------------------------------------------------------------------|
-| `start_year`     | int  | 2023    | The beginning year for generating random dates.                       |
-| `end_year`       | int  | 2025    | The ending year for generating random dates.                          |
-| `num-requests`   | int  | 1       | Number of times the script will fetch 50 random breweries per request |
-| `target`         | str  | "local" | Storage target: "local" for disk or "s3" for S3 bucket.               |
+| Parameter        | Type | Default | Description                                                            |
+|------------------|------|---------|------------------------------------------------------------------------|
+| `start_year`     | int  | 2023    | The beginning year for generating random dates.                        |
+| `end_year`       | int  | 2025    | The ending year for generating random dates.                           |
+| `num-requests`   | int  | 1       | Number of times the script will fetch 50 random breweries per request. |
+| `target`         | str  | "local" | Storage target: "local" for disk or "s3" for S3 bucket.                |
 
 If no parameter is provided when triggering the DAG, defaults will be used.
 
@@ -39,11 +39,13 @@ Files are saved in the following structure locally:
 
 Files are saved in the following structure at **S3**:
 ```bash
-s3://breweries-datalake/bronze_layer/
+s3://AWS_S3_DATALAKE_BUCKET/bronze_layer/
 └── year=YYYY/
     └── month=MM/
         └── day=DD/
             └── YYYY_MM_DD_data.jsonl
 ```
+ℹ️ Note: If using s3, be sure the environment variable AWS_S3_DATALAKE_BUCKET is set correctly and AWS credentials
+are available.
 
 Each ".jsonl" file contains brewery records assigned a random date between the defined "start_year" and "end_year".

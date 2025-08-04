@@ -12,10 +12,10 @@ This Airflow DAG orchestrates a data transformation pipeline that aggregates bre
 
 The DAG accepts parameters via "params", which are rendered into the Bash command:
 
-| Parameter | Type | Default | Description                                         |
-|-----------|------|---------|-----------------------------------------------------|
-| `source`  | str  | "local" | Source of the input data: "local" or "s3".          |
-| `target`  | str  | "local" | Destination for aggregated data: "local" or "s3".   |
+| Parameter | Type | Default | Description                                             |
+|-----------|------|---------|---------------------------------------------------------|
+| `source`  | str  | "local" | Storage target: "local" for disk or "s3" for S3 bucket. |
+| `target`  | str  | "local" | Storage target: "local" for disk or "s3" for S3 bucket. |
 
 If no parameter is provided when triggering the DAG, defaults will be used.
 
@@ -33,6 +33,8 @@ Files are saved in the following structure locally:
 
 Files are saved in the following structure at S3:
 ```bash
-s3://breweries-datalake/gold_layer/breweries_distribution/
+s3://AWS_S3_DATALAKE_BUCKET/gold_layer/breweries_distribution/
 └── part-xxx-yyy.snappy.parquet
 ```
+ℹ️ Note: If using s3, be sure the environment variable AWS_S3_DATALAKE_BUCKET is set correctly and AWS credentials
+are available.

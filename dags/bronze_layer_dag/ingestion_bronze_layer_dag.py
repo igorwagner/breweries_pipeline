@@ -13,7 +13,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id="fetch_brewery_data",
+    dag_id="ingestion_bronze_layer_dag",
     default_args=default_args,
     description="Fetch brewery data and store partitioned locally",
     schedule=None,

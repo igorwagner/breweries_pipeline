@@ -4,6 +4,10 @@
 
 import argparse
 
+from py4j.protocol import Py4JJavaError
+from pyspark.errors.exceptions.captured import AnalysisException
+from pyspark.sql.utils import IllegalArgumentException
+
 from jobs.utils.get_path import get_path
 from jobs.utils.logger import logger
 from jobs.utils.spark_session import set_spark_session
@@ -13,32 +17,53 @@ def run_pipeline(source: str, target: str):
     """
     Executes the Gold Layer transformation pipeline for brewery data.
 
-    Reads data from the Silver Layer, performs a group-by aggregation
-    to count breweries by country, state, city, and type, then writes
-    the result to the Gold Layer in Parquet format.
+    Reads data from the Silver Layer (Parquet), aggregates brewery counts by
+    country, state_province, city, and brewery_type, and writes the results
+    in Parquet format to the Gold Layer.
 
     Args:
-        source (str): Source mode for reading the Silver Layer.
-                      Must be either "local" or "s3".
-        target (str): Target mode for writing the Gold Layer.
-                      Must be either "local" or "s3".
+        source (str): Location type for input data. Either "local" or "s3".
+        target (str): Location type for output data. Either "local" or "s3".
+
+    Raises:
+        AnalysisException: If Spark encounters path or query resolution issues.
+        IllegalArgumentException: If Spark receives invalid input parameters.
+        OSError: For system-level I/O errors during read/write.
+        Py4JJavaError: For Java backend errors during Spark operations.
+        Exception: For other unforeseen errors.
+
+    Returns:
+        None
     """
     spark = set_spark_session("Build Gold Layer - Views")
     silver_path = get_path("silver_layer/breweries", source)
     gold_path = get_path("gold_layer/breweries_distribution", target)
+    try:
+        logger.info(f"Reading Silver Layer data from: {silver_path}")
 
-    df = spark.read.parquet(str(silver_path))
+        try:
+            df = spark.read.parquet(str(silver_path))
+        except (AnalysisException, IllegalArgumentException, OSError, Py4JJavaError) as error:
+            logger.error(f"Error reading parquet from silver path: {str(error)}")
+            raise
 
-    df_gold = (
-        df.groupBy("country", "state_province", "city", "brewery_type")
-        .count()
-        .withColumnRenamed("count", "total_breweries")
-    )
-    df_gold.write.mode("overwrite").parquet(str(gold_path))
+        df_gold = (
+            df.groupBy("country", "state_province", "city", "brewery_type")
+            .count()
+            .withColumnRenamed("count", "total_breweries")
+        )
+        logger.info(f"Writing aggregated data to Gold Layer at: {gold_path}")
 
-    logger.info("Gold Layer data written to Parquet at: %s", gold_path)
+        try:
+            df_gold.write.mode("overwrite").parquet(str(gold_path))
+        except (OSError, Py4JJavaError, PermissionError) as error:
+            logger.error(f"Error saving parquet to gold path: {str(error)}")
+            raise
 
-    spark.stop()
+        logger.info(f"Gold Layer data written to Parquet at: {gold_path}")
+    finally:
+        logger.info("Stopping Spark session")
+        spark.stop()
 
 
 if __name__ == "__main__":

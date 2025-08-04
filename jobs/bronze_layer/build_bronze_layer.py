@@ -101,11 +101,13 @@ def save_data_locally(file_path: Path, content: str) -> None:
     Returns:
         None
     """
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(file_path, "a", encoding="utf-8") as file:
-        file.write(content)
-
-    logger.info("Data saved locally!!")
+    try:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(file_path, "a", encoding="utf-8") as file:
+            file.write(content)
+        logger.info(f"Record saved to {file_path}!")
+    except OSError as error:
+        logger.error(f"Failed to save file {file_path}: {str(error)}")
 
 
 def save_data_s3(key_path: str, content: str) -> None:

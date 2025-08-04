@@ -23,10 +23,7 @@ def get_path(layer: str, mode: str):
             - If `mode` is "local", returns a `Path` to the local directory.
             - If `mode` is "s3", returns a `str` with the S3 path.
     """
-    base = {
-        "local": Path("/opt/airflow/datalake"),
-        "s3": f"s3a://{AWS_BUCKET}"
-    }[mode]
+    base = {"local": Path("/opt/airflow/datalake"), "s3": f"s3a://{AWS_BUCKET}"}[mode]
 
     if mode == "local":
         return base / layer

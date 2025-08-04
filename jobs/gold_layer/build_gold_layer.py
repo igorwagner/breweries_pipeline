@@ -2,8 +2,8 @@
 
 import argparse
 
-from jobs.utils.logger import logger
 from jobs.utils.get_path import get_path
+from jobs.utils.logger import logger
 from jobs.utils.spark_session import set_spark_session
 
 
@@ -27,7 +27,11 @@ def run_pipeline(source: str, target: str):
 
     df = spark.read.parquet(str(silver_path))
 
-    df_gold = df.groupBy("country", "state_province", "city", "brewery_type").count().withColumnRenamed("count","total_breweries")
+    df_gold = (
+        df.groupBy("country", "state_province", "city", "brewery_type")
+        .count()
+        .withColumnRenamed("count", "total_breweries")
+    )
     df_gold.write.mode("overwrite").parquet(str(gold_path))
 
     logger.info("Gold Layer data written to Parquet at: %s", gold_path)

@@ -2,10 +2,10 @@
 
 import argparse
 
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType
+from pyspark.sql.types import DoubleType, StringType, StructField, StructType
 
-from jobs.utils.logger import logger
 from jobs.utils.get_path import get_path
+from jobs.utils.logger import logger
 from jobs.utils.spark_session import set_spark_session
 
 
@@ -25,24 +25,26 @@ def run_pipeline(source: str, target: str) -> None:
     silver_path = get_path("silver_layer/breweries", target)
     spark = set_spark_session("Build Silver Layer - Breweries")
 
-    schema = StructType([
-        StructField("id", StringType(), nullable=True),
-        StructField("name", StringType(), nullable=True),
-        StructField("brewery_type", StringType(), nullable=True),
-        StructField("address_1", StringType(), nullable=True),
-        StructField("address_2", StringType(), nullable=True),
-        StructField("address_3", StringType(), nullable=True),
-        StructField("city", StringType(), nullable=True),
-        StructField("state_province", StringType(), nullable=True),
-        StructField("postal_code", StringType(), nullable=True),
-        StructField("country", StringType(), nullable=True),
-        StructField("longitude", DoubleType(), nullable=True),
-        StructField("latitude", DoubleType(), nullable=True),
-        StructField("phone", StringType(), nullable=True),
-        StructField("website_url", StringType(), nullable=True),
-        StructField("state", StringType(), nullable=True),
-        StructField("street", StringType(), nullable=True),
-    ])
+    schema = StructType(
+        [
+            StructField("id", StringType(), nullable=True),
+            StructField("name", StringType(), nullable=True),
+            StructField("brewery_type", StringType(), nullable=True),
+            StructField("address_1", StringType(), nullable=True),
+            StructField("address_2", StringType(), nullable=True),
+            StructField("address_3", StringType(), nullable=True),
+            StructField("city", StringType(), nullable=True),
+            StructField("state_province", StringType(), nullable=True),
+            StructField("postal_code", StringType(), nullable=True),
+            StructField("country", StringType(), nullable=True),
+            StructField("longitude", DoubleType(), nullable=True),
+            StructField("latitude", DoubleType(), nullable=True),
+            StructField("phone", StringType(), nullable=True),
+            StructField("website_url", StringType(), nullable=True),
+            StructField("state", StringType(), nullable=True),
+            StructField("street", StringType(), nullable=True),
+        ]
+    )
 
     logger.info(f"Reading from bronze layer: {bronze_path}")
     df = spark.read.schema(schema).json(str(bronze_path))

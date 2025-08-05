@@ -1,0 +1,13 @@
+name: CD - Trigger Webhook
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send POST request to webhook
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '{"text":"Hi! New commit to main branch!"}' ${{ secrets.DISCORD_WEBHOOK_URL }}

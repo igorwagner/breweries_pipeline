@@ -10,4 +10,4 @@ jobs:
     steps:
       - name: Send POST request to webhook
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{"Content":"Hi! New commit to main branch!"}' ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -X POST -H "Content-Type: application/json" -d '{"content":"Hi! New commit to main branch!"}' ${{ secrets.DISCORD_WEBHOOK_URL }}

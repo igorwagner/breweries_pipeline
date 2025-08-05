@@ -75,7 +75,7 @@ def test_save_data_s3_new_file(mock_s3_client):
     save_data_s3("test/path/file.jsonl", '{"mock": "data"}\n')
 
     mock_s3_client.put_object.assert_called_once()
-    args, kwargs = mock_s3_client.put_object.call_args
+    _, kwargs = mock_s3_client.put_object.call_args
     assert kwargs["Bucket"] == bucket_name
     assert "mock" in kwargs["Body"].decode()
 

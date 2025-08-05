@@ -24,5 +24,12 @@ repos:
       - id: flake8
         name: flake8
         language: system
-        entry: flake8 jobs dags
+        entry: flake8 jobs dags tests
         types: [python]
+
+      - id: pytest
+        name: pytest
+        language: system
+        entry: pytest --maxfail=1 --disable-warnings
+        pass_filenames: false
+        always_run: true

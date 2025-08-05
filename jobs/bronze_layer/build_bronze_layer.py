@@ -14,7 +14,6 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from jobs.utils.logger import logger
 
-AWS_BUCKET = os.getenv("AWS_S3_DATALAKE_BUCKET")
 BASE_URL = "https://api.openbrewerydb.org/v1/breweries/random"
 s3_client = boto3.client("s3")
 
@@ -121,21 +120,26 @@ def save_data_s3(key_path: str, content: str) -> None:
     Returns:
         None
     """
+    aws_bucket = os.getenv("AWS_S3_DATALAKE_BUCKET")
     try:
         logger.info(f"Uploading to S3: {key_path}")
         try:
-            existing = s3_client.get_object(Bucket=AWS_BUCKET, Key=key_path)
+            existing = s3_client.get_object(Bucket=aws_bucket, Key=key_path)
             existing_content = existing["Body"].read().decode("utf-8")
-        except s3_client.exceptions.NoSuchKey:
-            existing_content = ""
+        except ClientError as error:
+            error_code = error.response.get("Error", {}).get("Code")
+            if error_code == "NoSuchKey":
+                existing_content = ""
+            else:
+                raise
 
         final_content = existing_content + content
         s3_client.put_object(
-            Bucket=AWS_BUCKET,
+            Bucket=aws_bucket,
             Key=key_path,
             Body=final_content.encode("utf-8"),
         )
-        logger.info(f"Data saved to s3://{AWS_BUCKET}/{key_path}!")
+        logger.info(f"Data saved to s3://{aws_bucket}/{key_path}!")
     except (ClientError, BotoCoreError) as exception:
         logger.error(f"Error uploading to S3: {str(exception)}")
 

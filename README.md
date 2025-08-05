@@ -20,27 +20,29 @@ This layered approach helps ensure data quality, improves pipeline modularity, a
 
 ```bash
 .
-├── dags/                    # DAG definitions for orchestrating data workflows
-│   ├── bronze_layer_dag/    # DAGs responsible for raw data ingestion into the Bronze layer
-│   ├── silver_layer_dag/    # DAGs for data cleaning, normalization, and transformation (Silver layer)
-│   └── gold_layer_dag/      # DAGs for data aggregation, enrichment, and exporting to final destinations (Gold layer)
-├── jobs/                    # Python scripts that implement the logic for each layer
-│   ├── bronze_layer/        # Scripts to fetch, parse, and write raw data to the Bronze layer
-│   ├── silver_layer/        # Scripts to clean, normalize, and transform Bronze data into the Silver layer
-│   ├── gold_layer/          # Scripts to aggregate, enrich, and export data from the Silver layer to the Gold layer
-│   └── utils/               # Reusable utility functions used across different layers and DAGs
-├── local_container/         # Docker-based setup for running Apache Airflow locally
-│   ├── .env                 # Environment variable definitions for the local Airflow container
-│   ├── docker-compose.yaml  # Docker Compose configuration for services like Airflow webserver, scheduler, and database
-│   ├── Dockerfile           # Custom Docker image for the Airflow setup
-│   └── requirements.txt     # Python packages required to run inside the local Airflow container
-├── requirements/            # Organized Python dependency files
-│   ├── all.txt              # Aggregates all requirements (dev + run + check)
-│   ├── check.txt            # Tools for linting, formatting, and static code analysis
-│   ├── dev.txt              # Development-only dependencies
-│   └── run.txt              # Runtime dependencies required for running the core application
-├── tests/                   # Unit tests for job scripts and utilities
-└── README.md                # Project documentation and setup instructions
+├── dags/                          # DAG definitions for orchestrating data workflows
+│   ├── bronze_layer_dag/          # DAGs responsible for raw data ingestion into the Bronze layer
+│   ├── datalake_orquestrator_dag/ # DAGs responsible for raw data ingestion into the Bronze layer
+│   ├── gold_layer_dag/            # DAGs for data aggregation, enrichment, and exporting to final destinations (Gold layer)
+│   ├── silver_layer_dag/          # DAGs for data cleaning, normalization, and transformation (Silver layer)
+│   └── utils/                     # Reusable utility functions used across different DAGs
+├── jobs/                          # Python scripts that implement the logic for each layer
+│   ├── bronze_layer/              # Scripts to fetch, parse, and write raw data to the Bronze layer
+│   ├── gold_layer/                # Scripts to aggregate, enrich, and export data from the Silver layer to the Gold layer
+│   ├── silver_layer/              # Scripts to clean, normalize, and transform Bronze data into the Silver layer
+│   └── utils/                     # Reusable utility functions used across different jobs
+├── local_container/               # Docker-based setup for running Apache Airflow locally
+│   ├── .env                       # Environment variable definitions for the local Airflow container
+│   ├── docker-compose.yaml        # Docker Compose configuration for services like Airflow webserver, scheduler, and database
+│   ├── Dockerfile                 # Custom Docker image for the Airflow setup
+│   └── requirements.txt           # Python packages required to run inside the local Airflow container
+├── requirements/                  # Organized Python dependency files
+│   ├── all.txt                    # Aggregates all requirements (dev + run + check)
+│   ├── check.txt                  # Tools for linting, formatting, and static code analysis
+│   ├── dev.txt                    # Development-only dependencies
+│   └── run.txt                    # Runtime dependencies required for running the core application
+├── tests/                         # Unit tests for job scripts and utilities
+└── README.md                      # Project documentation and setup instructions
 ```
 
 # 🧪 Local Setup Instructions
@@ -80,9 +82,11 @@ pip install -r requirements/all.txt
 📝 You must have Docker installed. If you don't, follow the instructions at: https://docs.docker.com/get-docker/
 Navigate to the `local_container` folder and run:
 ```bash
+touch .env
 docker compose up
 ```
-This will start the Airflow webserver and scheduler.
+This will start the Airflow webserver and scheduler. If any DAG fails, a Discord alert will be triggered automatically
+(if `DISCORD_WEBHOOK_URL` is set in `.env`).
 
 ## ✅ 5. Access Airflow UI
 
@@ -230,6 +234,66 @@ s3://AWS_S3_DATALAKE_BUCKET/gold_layer/breweries_distribution/
 ℹ️ Note: If using s3, be sure the environment variable AWS_S3_DATALAKE_BUCKET is set correctly and AWS credentials
 are available.
 
+# ✅ Data Quality Checks
+
+To ensure the reliability of the data being processed, the Silver Layer includes a set of data quality checks and cleaning steps:
+
+- **Deduplication**: Duplicate records are dropped using the unique `id` field.
+- **Schema Enforcement**: A strict schema is applied when reading the raw JSON from Bronze.
+- **Normalization**: String fields like `city`, `country`, and `state_province` are trimmed, lowercased, and capitalized.
+- **Field Derivations**:
+  - `has_website`: Boolean indicating if `website_url` is present.
+  - `has_phone`: Boolean indicating if `phone` is present.
+  - `has_geolocation`: Boolean indicating presence of valid `latitude` and `longitude`.
+- **Fallback Columns**: If `address_1` or `state_province` are missing, they are filled from `street` or `state` respectively.
+- **Phone & Zip Cleaning**: Non-digit characters are stripped from phone numbers and postal codes to new cleaned columns.
+- **Empty String Handling**: Empty strings are converted to `null` for consistency.
+- **Critical Null Removal**: Rows missing essential fields (`id`, `name`, `country`, `state_province`) are dropped.
+
+These steps ensure that the Silver layer contains clean, consistent, and analytics-ready data.
+
+# 🧠 Trade-offs & Design Decisions
+
+Throughout the development of this pipeline, several decisions were made to balance complexity, maintainability,
+scalability, and robustness. Below are some of the most relevant trade-offs and design choices:
+
+### ✅ API Usage
+
+- **Choice**: The pipeline uses the `/v1/breweries/random` endpoint for ingestion.
+- **Reason**: The Open Brewery DB API doesn't provide an updated timestamp field or pagination on random queries. To simulate incremental ingestion over time, each request is tagged with a randomly generated date.
+- **Trade-off**: This makes the pipeline more realistic but less deterministic for data reproducibility.
+
+### ✅ Partitioning Strategy
+
+- **Choice**: Bronze data is partitioned by random `year/month/day`, while Silver is partitioned by `country/state_province`.
+- **Reason**: Date partitioning is used to simulate real-world ingestion cadence. Location-based partitioning improves query performance and aligns with expected use cases.
+- **Trade-off**: Querying by ingestion date is non-reliable in Bronze. In Gold, no partitioning was applied as the data is already aggregated.
+
+### ✅ Schema Enforcement and Normalization
+
+- **Choice**: The Silver layer enforces schema strictly and performs various normalization steps like trimming, lowercasing, and deduplication.
+- **Trade-off**: This increases pipeline complexity slightly, but greatly enhances data consistency and usability for downstream consumers.
+
+### ✅ Dockerized Airflow for Orchestration
+
+- **Choice**: Airflow was chosen for its maturity and extensibility. It's deployed locally using Docker Compose.
+- **Trade-off**: While not production-ready, this setup allows rapid prototyping and mirrors real-world DAG orchestration behavior.
+
+### ✅ Error Handling
+
+- **Choice**: Specific exception types (e.g., `ParseException`, `AnalysisException`) are caught and logged separately.
+- **Trade-off**: This makes debugging easier and improves reliability, but adds verbosity to the code.
+
+### ✅ Alerting via Discord
+
+- **Choice**: Alerts on DAG failure are sent via a Discord webhook.
+- **Trade-off**: Easy to implement locally, but would require adaptation (e.g., Slack, PagerDuty) for production-grade systems.
+
+### ✅ AWS Integration
+
+- **Choice**: Integration with S3, Athena, and Glue was done using manual setup for simplicity.
+- **Trade-off**: While fast for testing, this could be automated via Terraform or boto3 scripts in a production context.
+
 # ☁️ AWS Cloud Setup for Testing
 
 To test the project’s cloud functionalities on AWS, the following setup steps were performed:
@@ -268,3 +332,80 @@ Since Athena relies on Glue Data Catalog for table metadata, the schemas for the
 added in the AWS Glue console. This step enables Athena to recognize the tables and display them in the UI for querying.
 
 This setup allows seamless integration and testing of the data pipelines end-to-end using AWS managed services.
+
+# 🔔 Alerting and Monitoring
+
+The project includes basic alerting capabilities for monitoring Airflow DAG failures using a **Discord webhook**.
+
+## 🚨 Failure Notifications
+
+If any task in a DAG fails, an alert will be sent to a Discord channel with the following structure:
+
+```bash
+❌ **DAG `your_dag_id` failed**
+Task: `your_task_id`
+Execution time: `2025-08-04T12:00:00Z`
+🔍 View logs
+```
+
+This allows for faster debugging and immediate awareness of issues in the pipeline execution.
+## ⚙️ How It Works
+
+- A function named `send_discord_alert` is registered as the `on_failure_callback` of each DAG.
+- It constructs a message with DAG name, failed task ID, execution timestamp, and a link to the logs in the Airflow UI.
+- The message is posted to a Discord channel via a webhook URL defined as an environment variable (`DISCORD_WEBHOOK_URL`).
+
+✉️ Make sure your `.env` file inside `local_container/` includes:
+
+```bash
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your_webhook_url_here
+```
+✅ This alerting system is designed for **local development monitoring** and can be easily adapted to Slack or email in
+production.
+
+# ✅ Testing Strategy
+
+The project includes unit tests to ensure reliability and correctness of each pipeline layer. All tests are written
+using `pytest` and make use of the `unittest.mock` library to simulate external dependencies like Spark sessions, file
+systems, and logger calls.
+
+## 🧪 What is Tested?
+
+Tests are written for each layer of the medallion architecture and cover:
+## 🥉 Bronze Layer
+
+- Data Ingestion Validations
+  - Verifies correct HTTP request handling and response parsing from the public API.
+  - Ensures data is saved with proper partitioning by random date.
+- Error Handling
+  - Confirms that network or serialization errors are logged and do not crash the pipeline.
+
+## 🥈 Silver Layer
+
+- Schema Enforcement & Cleaning
+  - Verifies that the raw JSON data is parsed using the expected schema.
+  - Confirms that duplicates are correctly dropped.
+- Error Handling
+  - Tests raise and log a `ParseException` when JSON parsing fails.
+  - Ensures Spark session is always stopped in error scenarios.
+
+## 🥇 Gold Layer
+
+- Aggregation Logic
+  - Checks that grouping by `country`, `state_province`, `city`, and `brewery_type` is performed correctly.
+  - Confirms the result is written in Parquet format to the correct path.
+- Error Handling
+  - Simulates errors while reading or writing Parquet files and verifies they are logged appropriately.
+  - Ensures Spark session is stopped even when exceptions occur.
+
+## 🧪 How to Run the Tests
+
+To execute all tests, you can run the following command in the root folder:
+```bash
+pytest
+```
+
+You can also see a summary of test results with:
+```bash
+pytest -v
+```

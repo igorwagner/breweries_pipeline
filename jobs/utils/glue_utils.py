@@ -18,7 +18,7 @@ from pyspark.sql.types import (
 
 from jobs.utils.logger import logger
 
-glue = boto3.client("glue")
+glue = boto3.client("glue", region_name="us-east-1")
 
 SPARK_TO_GLUE_TYPE_MAP = {
     StringType: "string",

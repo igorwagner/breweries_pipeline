@@ -29,6 +29,7 @@ Two S3 buckets were provisioned:
 
 4. **Athena Databases Creation**
 The silver and gold databases are automatically created in Athena at runtime using utility functions in the pipeline.
+After the Silver Layer ingestion is complete, run the following query in Athena to ensure the partitions are properly registered: `MSCK REPAIR TABLE silver.breweries`
 
 5. **Glue Catalog Integration**
 Glue databases and tables are managed programmatically using the `glue_utils.py` module.

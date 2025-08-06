@@ -123,7 +123,7 @@ def run_pipeline(source: str, target: str) -> None:
                 df=df,
                 database_name="silver",
                 table_name="breweries",
-                s3_location=str(silver_path),
+                s3_location=str(silver_path).replace("s3a://", "s3://"),
                 partition_columns=["country", "state_province"],
             )
     finally:

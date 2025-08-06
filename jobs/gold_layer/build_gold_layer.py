@@ -67,7 +67,7 @@ def run_pipeline(source: str, target: str):
                 df=df_gold,
                 database_name="gold",
                 table_name="breweries_distribution",
-                s3_location=str(gold_path),
+                s3_location=str(gold_path).replace("s3a://", "s3://"),
             )
     finally:
         logger.info("Stopping Spark session")

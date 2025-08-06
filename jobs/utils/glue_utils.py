@@ -167,17 +167,20 @@ def create_glue_table(
         partition_columns = []
 
     columns = []
-    partitions = []
     for field in df.schema.fields:
-        column_def = {
-            "Name": field.name,
-            "Type": spark_type_to_glue_type(field.dataType),
-        }
+        if field.name not in partition_columns:
+            columns.append({
+                "Name": field.name,
+                "Type": spark_type_to_glue_type(field.dataType),
+            })
 
-        if field.name in partition_columns:
-            partitions.append(column_def)
-        else:
-            columns.append(column_def)
+    partitions = []
+    for name in partition_columns:
+        field = df.schema[name]
+        partitions.append({
+            "Name": name,
+            "Type": spark_type_to_glue_type(field.dataType),
+        })
 
     logger.info(f"Creating table '{table_name}' in database '{database_name}'...")
 

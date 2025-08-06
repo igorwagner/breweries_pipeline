@@ -10,3 +10,4 @@ local_container/.env
 __pycache__/
 
 datalake/*
+!datalake/.gitkeep

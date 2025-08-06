@@ -11,6 +11,7 @@ from pyspark.sql.types import DoubleType, StringType, StructField, StructType
 from pyspark.sql.utils import ParseException
 
 from jobs.utils.get_path import get_path
+from jobs.utils.glue_utils import create_glue_table
 from jobs.utils.logger import logger
 from jobs.utils.spark_session import set_spark_session
 
@@ -117,6 +118,14 @@ def run_pipeline(source: str, target: str) -> None:
             raise
 
         logger.info(f"Silver Layer data written to Parquet at: {silver_path}")
+        if target == "s3":
+            create_glue_table(
+                df=df,
+                database_name="silver",
+                table_name="breweries",
+                s3_location=str(silver_path),
+                partition_columns=["country", "state_province"],
+            )
     finally:
         logger.info("Stopping Spark session")
         spark.stop()

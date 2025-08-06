@@ -9,6 +9,7 @@ from pyspark.errors.exceptions.captured import AnalysisException
 from pyspark.sql.utils import IllegalArgumentException
 
 from jobs.utils.get_path import get_path
+from jobs.utils.glue_utils import create_glue_table
 from jobs.utils.logger import logger
 from jobs.utils.spark_session import set_spark_session
 
@@ -61,6 +62,13 @@ def run_pipeline(source: str, target: str):
             raise
 
         logger.info(f"Gold Layer data written to Parquet at: {gold_path}")
+        if target == "s3":
+            create_glue_table(
+                df=df_gold,
+                database_name="gold",
+                table_name="breweries_distribution",
+                s3_location=str(gold_path),
+            )
     finally:
         logger.info("Stopping Spark session")
         spark.stop()

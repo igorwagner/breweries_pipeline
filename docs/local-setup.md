@@ -36,6 +36,7 @@ pip install -r requirements/all.txt
 Navigate to the `local_container` folder and run:
 ```bash
 echo "AIRFLOW_UID=50000" >> .env
+docker compose up airflow-init
 docker compose up
 ```
 This will start the Airflow webserver and scheduler. If you encounter any issues with the container installation,
